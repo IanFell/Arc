@@ -29,150 +29,176 @@ public class ARC_APPLET extends Applet implements KeyListener, Runnable {
 
 	// Keep the compiler happy.
 	private final static long serialVersionUID = 654321; 
+	
+	public final static int APPLET_WIDTH  = 600;
+	public final static int APPLET_HEIGHT = 700;
+	
+	private final static int SCREEN_CENTER = APPLET_WIDTH / 2;
 
-	// Game screen width and height.
-	public final int APPLET_WIDTH  = 600;
-	public final int APPLET_HEIGHT = 700;
+	//private int playerScore = 0;
+	//private int level       = 0;
 
-	public int PLAYER_SCORE = 0;
-	public int LEVEL = 0;
-
-	public Color colorOfBall;
+	// Color of ball "planets".
+	private Color colorOfBall;
 
 	// Color of flashing square.
-	public Color flashColor; 
+	private Color flashColor; 
 
 	// Keeps track of fireBallArray
-	public int fire = 0;
+	private int fire = 0;
 
 	// Keeps track of impacts with black holes, used to update life icons.
-	public int impacts        = 0;
-	public int ballImpacts    = 0;
-	public boolean impact     = false;
-	public boolean ballImpact = false;
-	public boolean EASY, MEDIUM, HARD, GAME_OVER, WINNER;
-	public int STATE;
-
+	private int impacts        = 0;
+	private int ballImpacts    = 0;
+	private boolean impact     = false;
+	private boolean ballImpact = false;
+	
+	public boolean easy;
+	public boolean medium;
+	public boolean hard;
+	
+	private int gameState;
+	private final int INTRO_SCREEN     = -1;
+	private final int RULES_SCREEN     = 0;
+	private final int GAME_PLAY_SCREEN = 1;
+	private final int GAME_OVER_SCREEN = 2;
+	private final int WINNING_SCREEN   = 3;
+	
+	private final int DIFFICULTY_LEVEL_ONE   = 5;
+	private final int DIFFICULTY_LEVEL_TWO   = 10;
+	private final int DIFFICULTY_LEVEL_THREE = 15;
+	
 	// This is for double buffering.
 	private Image i;       
 	private Graphics doubleG;
 	URL url;
+	
+	// Images start at 0, 0.
+	private int imageOriginValue = 0;
+	
+	private Color imageBackgroundColor = Color.WHITE;
+	
+	private String fontName = "Bauhaus 93";
+	private int bold        = Font.BOLD;
+	private int fontSize    = 50;
+	private Color fontColor = Color.WHITE;
 
 	// Player.
-	Arc arc           = new Arc(APPLET_WIDTH / 2 - 60, APPLET_HEIGHT - 35, 100, 25, 135, 270);
+	private Arc arc = new Arc(APPLET_WIDTH / 2 - 60, APPLET_HEIGHT - 35, 100, 25, 135, 270);
 
-	// Ball player has to catch.
-	Ball[] ballArray  = new Ball[6];
+	// Ball "planet" player has to catch.
+	private Ball[] ballArray = new Ball[6];
 
 	// Other game objects.
-	Stars[] starArray = new Stars[100];
-	FireBall[] fireBallArray = new FireBall[100];
-	BlackHole[] blackHoleArray = new BlackHole[2];
-	UFO ufo;
-	Lazer [] lazerArray = new Lazer[2];
+	private Stars[] starArray          = new Stars[100];
+	private FireBall[] fireBallArray   = new FireBall[100];
+	private BlackHole[] blackHoleArray = new BlackHole[2];
+	private Lazer [] lazerArray        = new Lazer[2];
+	private UFO ufo;
 
 	// Use this to load images.
-	Toolkit tk = this.getToolkit();
+	private Toolkit tk = this.getToolkit();
 
-	// All audio.
-	AudioClip music;
-	AudioClip ballCollide;
-	AudioClip blackHoleCollide;		
-	AudioClip gameover, lazerhit, lazershot, winner;
+	private AudioClip music;
+	private AudioClip ballCollide;
+	private AudioClip blackHoleCollide;		
+	private AudioClip gameover;
+	private AudioClip lazerhit;
+	private AudioClip lazershot;
+	private AudioClip winner;
 
-	// All images.
-	Image ARC_LOGO;
-	Image ARC_RULES;
-	Image explosion;
+	private Image ARC_LOGO;
+	private Image ARC_RULES;
+	private Image explosion;
 
-	/**
-	 * Load audio.
-	 */
-	public void loadAudio(){
+	private void loadAudio(){
 		URL musicsong = this.getClass().getResource("/Music/menu.au");
-		music = ARC_APPLET.newAudioClip(musicsong);
+		music         = ARC_APPLET.newAudioClip(musicsong);
 
-		URL bc = this.getClass().getResource("/Music/ballcollision.au");
+		URL bc      = this.getClass().getResource("/Music/ballcollision.au");
 		ballCollide = ARC_APPLET.newAudioClip(bc);
 
-		URL bhc = this.getClass().getResource("/Music/blackholecollision.au");
+		URL bhc     = this.getClass().getResource("/Music/blackholecollision.au");
 		ballCollide = ARC_APPLET.newAudioClip(bhc);
 
-		URL go = this.getClass().getResource("/Music/gameover.au");
+		URL go      = this.getClass().getResource("/Music/gameover.au");
 		ballCollide = ARC_APPLET.newAudioClip(go);
 
-		URL lh = this.getClass().getResource("/Music/lazerhit.au");
+		URL lh      = this.getClass().getResource("/Music/lazerhit.au");
 		ballCollide = ARC_APPLET.newAudioClip(lh);
 
-		URL ls = this.getClass().getResource("/Music/lazershot.au");
+		URL ls      = this.getClass().getResource("/Music/lazershot.au");
 		ballCollide = ARC_APPLET.newAudioClip(ls);
 
-		URL win = this.getClass().getResource("/Music/lazershot.au");
+		URL win     = this.getClass().getResource("/Music/lazershot.au");
 		ballCollide = ARC_APPLET.newAudioClip(win);
 	}
 
-	/**
-	 * Load images.
-	 */
-	public void loadImages(){
-		URL ex = this.getClass().getResource("/Images/explosion.png");
+	private void loadImages(){
+		URL ex    = this.getClass().getResource("/Images/explosion.png");
 		explosion = tk.getImage(ex);
 
-		URL al = this.getClass().getResource("/Images/ARC_LOGO.png");
+		URL al   = this.getClass().getResource("/Images/ARC_LOGO.png");
 		ARC_LOGO = tk.getImage(al);
 
-		URL ar = this.getClass().getResource("/Images/ARC_RULES.png");
+		URL ar    = this.getClass().getResource("/Images/ARC_RULES.png");
 		ARC_RULES = tk.getImage(ar);
 	}
 
-	/**
-	 * Initialize game.
-	 */
 	public void init(){			
 		addKeyListener(this);
 		loadAudio();
 		loadImages();
 		setSize(APPLET_WIDTH, APPLET_HEIGHT);
 		setBackground(Color.BLACK);
-		ufo = new UFO(200, 200, 100, 25, Color.LIGHT_GRAY);
+		ufo   = new UFO(200, 200, 100, 25, Color.LIGHT_GRAY);
+		easy  = true;
 		music.loop();
-		EASY  = true;
 
-		// Set level state to intro screen.
-		STATE = -1;
+		gameState = INTRO_SCREEN;
 
-		// Creates new balls, with random x position and color.
+		// Creates new "planet" balls, with random x position and color.
 		for(int i = 0; i < ballArray.length; i++){
-			Random rand  = new Random(); // For x start position.
-			Random rand2 = new Random(); // For ball color.
-			int x = rand2.nextInt(6);    // For ball color.
-			getBallColor(x);
-			ballArray[i] = new Ball(rand.nextInt(APPLET_WIDTH - 50), 0, 50, 50, colorOfBall);	
+			Random rand2         = new Random();   
+			int randomColorValue = rand2.nextInt(6); 
+			getBallColor(randomColorValue);
+			Random xPosition  = new Random(); 
+			int offset        = 50;
+			ballArray[i]      = new Ball(
+					xPosition.nextInt(APPLET_WIDTH - offset), 
+					0, 
+					offset, 
+					offset, 
+					colorOfBall
+					);	
 
 		}
 
 		// Creates new Stars, with random x,y position. 
 		for(int i = 0; i < starArray.length; i++){
-			Random randx = new Random(); // For x start position.
-			Random randy = new Random(); // For y start position.
-			starArray[i] = new Stars(
-					randx.nextInt(APPLET_WIDTH), 
-					randy.nextInt(APPLET_HEIGHT), 
-					1, 
-					1, 
+			Random xPosition = new Random();
+			Random yPosition = new Random(); 
+			int size         = 1;
+			starArray[i]     = new Stars(
+					xPosition.nextInt(APPLET_WIDTH), 
+					yPosition.nextInt(APPLET_HEIGHT), 
+					size, 
+					size, 
 					Color.WHITE
 					);
 		}
 
 		// Creates the fire balls.
+		int size = 50;
 		for(int i = 0; i < fireBallArray.length; i++){
-			fireBallArray[i] = new FireBall(0, APPLET_HEIGHT, 50, 50, Color.WHITE);
+			fireBallArray[i] = new FireBall(0, APPLET_HEIGHT, size, size, Color.WHITE);
 		}
 
 		// Creates the black holes.
+		size = 10;
 		for(int i = 0; i  <blackHoleArray.length; i++){
-			Random randx      = new Random(); // For x start position.
-			blackHoleArray[i] = new BlackHole(randx.nextInt(APPLET_WIDTH), 0, 10, 10, Color.DARK_GRAY);
+			Random xPosition  = new Random(); 
+			blackHoleArray[i] = new BlackHole(xPosition.nextInt(APPLET_WIDTH), 0, size, size, Color.DARK_GRAY);
 		}
 
 		// Creates the lazers.
@@ -181,7 +207,7 @@ public class ARC_APPLET extends Applet implements KeyListener, Runnable {
 					(ufo.getX() + ufo.getWidth())  / 2, 
 					ufo.getY() + ufo.getHeight() + 50, 
 					15, 
-					10, 
+					size, 
 					Color.GREEN, 
 					70, 
 					180
@@ -189,9 +215,6 @@ public class ARC_APPLET extends Applet implements KeyListener, Runnable {
 		}
 	}
 
-	/**
-	 * Start game.
-	 */
 	public void start(){
 		Thread thread = new Thread(this);
 		thread.start();
@@ -204,35 +227,27 @@ public class ARC_APPLET extends Applet implements KeyListener, Runnable {
 	public void run() {
 		while(true){
 			arc.update(this);		
-
 			for(int i = 0; i < starArray.length; i++){
 				starArray[i].update(this);
 			}
-
 			for(int i = 0; i < starArray.length; i++){
 				if(starArray[i].getY() > APPLET_WIDTH)
 					starArray[i].setY(0);
 			}
-
 			for(int i = 0; i < ballArray.length; i++){
 				ballArray[i].update(this);
 			}
-
 			for(int i = 0; i < blackHoleArray.length; i++){
 				blackHoleArray[i].update(this);						
 			}
-
 			for(int i = 0; i < lazerArray.length; i++){
 				lazerArray[i].update(this);
 			}
-
-			if(fire != 0)
+			if(fire != 0) {
 				fireBallArray[fire].update(this);
-
+			}
 			ufo.update(this);
-
 			repaint(); 
-
 			try{
 				Thread.sleep(10);
 			} catch(InterruptedException e) {
@@ -245,23 +260,23 @@ public class ARC_APPLET extends Applet implements KeyListener, Runnable {
 	 * @param Graphcis g
 	 */
 	public void paint(Graphics g){													
-		switch(STATE)
+		switch(gameState)
 		{
-		case -1:
-			getIntro(g);
+		case INTRO_SCREEN:
+			drawIntro(g);
 			break;
-		case 0:
-			getRules(g);	
+		case RULES_SCREEN:
+			drawRules(g);	
 			break;
-		case 1:
+		case GAME_PLAY_SCREEN:
 			drawStars(g);
-			gameLogic(g);
+			performGameLogic(g);
 			break;
-		case 2:
+		case GAME_OVER_SCREEN:
 			drawStars(g);
-			gameOver(g);						    		
+			drawGameOverScreen(g);						    		
 			break;
-		case 3:
+		case WINNING_SCREEN:
 			drawStars(g);						    		
 			drawWinningScreen(g);
 			break;
@@ -271,51 +286,46 @@ public class ARC_APPLET extends Applet implements KeyListener, Runnable {
 	/**
 	 * Reset to original state for new game.
 	 */
-	public void reset(){
-		EASY        = true;
-		MEDIUM      = false;
-		HARD        = false;
+	public void resetGame(){
+		easy        = true;
+		medium      = false;
+		hard        = false;
 		impacts     = 0;
 		ballImpacts = 0;
-		STATE       = -1;
+		gameState   = INTRO_SCREEN;
 	}
 
 	/**
 	 * Start new game.
 	 */
 	public void newGame(){
-		EASY        = true;
-		MEDIUM      = false;
-		HARD        = false;
+		easy        = true;
+		medium      = false;
+		hard        = false;
 		impacts     = 0;
 		ballImpacts = 0;
-		STATE       = 1;
+		gameState   = GAME_PLAY_SCREEN;
 	}
 
 	/**
-	 * Game logic.
 	 * 
 	 * @param Graphics g
 	 */
-	public void gameLogic(Graphics g){
+	public void performGameLogic(Graphics g){
 		arc.draw(g);
 		drawFirstBalls(g);			
 		generateAllSubsequentBalls(g); 
 		checkBallArcCollision(g);
 		drawFireBalls(g);
-
 		if (ballImpact) {
 			ballImpacts++;
 		}
-
 		blackHoleArray[0].draw(g);				
 		drawBlackHoles(g);					
-		checkBlackHoleCollision(g);//check for collision with black hole
-
+		checkBlackHoleCollisionWithPlayer(g);
 		if(impact) {
 			impacts++;
 		}
-
 		drawLives(g);
 		ufo.draw(g);
 		lazerArray[0].draw(g);
@@ -323,33 +333,31 @@ public class ARC_APPLET extends Applet implements KeyListener, Runnable {
 		checkLazerCollision(g);
 		drawScore(g);
 
-		// Used to know which color ball to catch.
+		// Square flashes to show player which color ball to catch.
 		drawFlashSquare(g);
 
 		impact     = false;
 		ballImpact = false;
 
 		// Sets how fast balls are falling, and if player has won.
-		setGameStates();
+		setGameState();
 	}
 
 	/**
 	 * Sets how fast balls are falling, and if player has won.
 	 */
-	public void setGameStates() {
-		if (ballImpacts == 5){
-			EASY   = false;
-			MEDIUM = true;
-			HARD   = false;			
+	public void setGameState() {
+		if (ballImpacts == DIFFICULTY_LEVEL_ONE){
+			easy   = false;
+			medium = true;
+			hard   = false;			
 		}
-
-		if(ballImpacts == 10) {
-			EASY   = false;
-			MEDIUM = false;
-			HARD   = true;
+		if (ballImpacts == DIFFICULTY_LEVEL_TWO) {
+			easy   = false;
+			medium = false;
+			hard   = true;
 		}
-
-		if(ballImpacts == 15) {
+		if (ballImpacts == DIFFICULTY_LEVEL_THREE) {
 			try{
 				if(winner != null) {
 					winner.play();
@@ -357,29 +365,36 @@ public class ARC_APPLET extends Applet implements KeyListener, Runnable {
 			} catch(NullPointerException e){
 				e.printStackTrace();
 			}
-			STATE = 3;
+			gameState = WINNING_SCREEN;
 		}			
 	}
 
 	/**
-	 * Sets ball color
 	 * 
-	 * @param int i
+	 * @param int color
 	 * @return Color
 	 */
-	private Color getBallColor(int i) {
-		if(i == 0)
+	private Color getBallColor(int color) {
+		switch (color) {
+		case 0:
 			colorOfBall = Color.BLUE;
-		else if(i == 1)
+			break;
+		case 1:
 			colorOfBall = Color.GREEN;
-		else if(i == 2)
+			break;
+		case 2:
 			colorOfBall = Color.YELLOW;
-		else if(i == 3)
+			break;
+		case 3:
 			colorOfBall = Color.CYAN;
-		else if(i == 4)
+			break;
+		case 4:
 			colorOfBall = Color.MAGENTA;
-		else if(i == 5)
+			break;
+		case 5:
 			colorOfBall = Color.PINK;
+			break;
+		}
 		return colorOfBall;
 	}
 
@@ -393,9 +408,10 @@ public class ARC_APPLET extends Applet implements KeyListener, Runnable {
 			if(
 					(lazerArray[i].getY()+lazerArray[0].getHeight() > arc.getY()) &&
 					((lazerArray[i].getX() >= arc.getX()) && 
-							(lazerArray[0].getX() <= (arc.getX()+arc.getWidth())))
-					){			
-				ballImpacts = 0; // Reset player score.
+					(lazerArray[0].getX() <= (arc.getX()+arc.getWidth())))
+					){		
+				// Reset player score.
+				ballImpacts = 0; 
 				try{
 					if(lazershot != null) {
 						lazershot.play();
@@ -408,14 +424,22 @@ public class ARC_APPLET extends Applet implements KeyListener, Runnable {
 	}
 
 	/**
-	 * Draws lazers from UFOs.
+	 * Draws lazers shooting from UFOs.
 	 * 
 	 * @param Graphics g
 	 */
 	private void drawLazers(Graphics g) {
-		if(lazerArray[0].getY() >= APPLET_HEIGHT){
+		if(lazerArray[0].getY() >= APPLET_HEIGHT) {
 			for(int i = 0; i < lazerArray.length; i++) {				
-				lazerArray[i] = new Lazer(ufo.getX() + ufo.getWidth() / 2,  ufo.getY() + ufo.getHeight() + 30, 15, 10, Color.WHITE, 70, 180);				
+				lazerArray[i] = new Lazer(
+						ufo.getX() + ufo.getWidth() / 2,  
+						ufo.getY() + ufo.getHeight() + 30, 
+						15, 
+						10, 
+						Color.WHITE, 
+						70, 
+						180
+						);				
 				for(int a = 0; a < lazerArray.length; a++){	
 					lazerArray[a].draw(g);	
 					try{
@@ -429,109 +453,92 @@ public class ARC_APPLET extends Applet implements KeyListener, Runnable {
 			}		
 		}
 	}
-
+	
 	/**
-	 * Draws screen when player wins.
 	 * 
 	 * @param Graphics g
 	 */
-	public void drawWinningScreen(Graphics g){
-
-		for(int i=0; i<starArray.length; i++) {	
-			starArray[i].draw(g);
-			g.setColor(Color.GRAY);
-			g.fillRect(APPLET_WIDTH-130,  10,  200,  120);
-
-			Font font = new Font("Bauhaus 93", Font.BOLD, 50);
-			g.setFont(font);
-			g.setColor(Color.WHITE);	
-			g.drawString("CONGRADULATIONS", (APPLET_WIDTH / 2) - 240, 250);
-
-			Font font3 = new Font("Bauhaus 93", Font.BOLD, 50);
-			g.setFont(font3);
-			g.setColor(Color.WHITE);	
-			g.drawString("YOU HAVE SAVED THE", (APPLET_WIDTH / 2) - 250, 300);
-
-			Font font4 = new Font("Bauhaus 93", Font.BOLD, 50);
-			g.setFont(font4);
-			g.setColor(Color.WHITE);	
-			g.drawString("WORLD FROM NUCLEAR", (APPLET_WIDTH / 2) - 280, 350);
-
-			Font font5 = new Font("Bauhaus 93", Font.BOLD, 50);
-			g.setFont(font5);
-			g.setColor(Color.WHITE);	
-			g.drawString("DESTRUCTION", (APPLET_WIDTH / 2) - 160, 400);
-
-			Font font2 = new Font("Bauhaus 93", Font.BOLD, 25);
-			g.setFont(font2);
-			g.setColor(Color.WHITE);	
-			g.drawString("NEW GAME?", (APPLET_WIDTH / 2) - 60, 450);
-
-			Font font6 = new Font("Bauhaus 93", Font.BOLD, 25);
-			g.setFont(font6);
-			g.setColor(Color.WHITE);	
-			g.drawString("Y/N", (APPLET_WIDTH / 2) - 10, 500);
-
-			// Set color rectangle back to gray.
-			g.setColor(Color.GRAY);
-			g.fillRect(0,  10,  130,  120);
-
-			// Reset score to 0.
-			ballImpacts = 0;
-		}		
+	private void resetScoreSquare(Graphics g) {
+		g.setColor(Color.GRAY);
+		g.fillRect(APPLET_WIDTH - 130,  10,  200,  120);
+	}
+	
+	/**
+	 * 
+	 * @param Graphics g
+	 */
+	private void resetColorSqure(Graphics g) {
+		g.setColor(Color.GRAY);
+		g.fillRect(0,  10,  130,  120);
 	}
 
 	/**
-	 * Draws game over screen.
 	 * 
 	 * @param Graphics g
 	 */
-	public void gameOver(Graphics g){
-		for(int i = 0; i < starArray.length; i++) {		
-			starArray[i].draw(g);
-			g.setColor(Color.GRAY);
-			g.fillRect(APPLET_WIDTH - 130,  10,  200,  120);
+	public void drawWinningScreen(Graphics g) {
+		drawStars(g);
+		resetScoreSquare(g);
+		resetColorSqure(g);
+		fontSize  = 50;
+		Font font = new Font(fontName, bold, fontSize);
+		g.setFont(font);	
+		g.setColor(fontColor);
+		
+		g.drawString("CONGRADULATIONS", SCREEN_CENTER - 240, 250);
+		g.drawString("YOU HAVE SAVED THE", SCREEN_CENTER - 250, 300);
+		g.drawString("WORLD FROM NUCLEAR", SCREEN_CENTER - 280, 350);
+		g.drawString("DESTRUCTION", SCREEN_CENTER - 160, 400);
 
-			Font font = new Font("Bauhaus 93", Font.BOLD, 50);
-			g.setFont(font);
-			g.setColor(Color.WHITE);	
-			g.drawString("GAME OVER_", (APPLET_WIDTH/2)-140, 250);
+		fontSize = 25;
+		font     = new Font(fontName, bold, fontSize);
+		g.setFont(font);	
+		g.drawString("NEW GAME?", SCREEN_CENTER - 60, 450);
+		g.drawString("Y/N", SCREEN_CENTER - 10, 500);
 
-			Font font2 = new Font("Bauhaus 93", Font.BOLD, 25);
-			g.setFont(font2);
-			g.setColor(Color.WHITE);	
-			g.drawString("NEW GAME?", (APPLET_WIDTH / 2) - 60, 300);
-
-			Font font3 = new Font("Bauhaus 93", Font.BOLD, 25);
-			g.setFont(font3);
-			g.setColor(Color.WHITE);	
-			g.drawString("Y/N", (APPLET_WIDTH / 2) - 10, 350);
-
-			// Set color rectangle back to gray.
-			g.setColor(Color.GRAY);
-			g.fillRect(0,  10,  130,  120);
-
-			// Reset score to 0.
-			ballImpacts = 0;
-		}
+		// Reset score to 0.
+		ballImpacts = 0;
 	}
 
 	/**
-	 * Draws intro screen / image.
 	 * 
 	 * @param Graphics g
 	 */
-	public void getIntro(Graphics g){
-		g.drawImage(ARC_LOGO, 0, 0, Color.WHITE, this);
+	public void drawGameOverScreen(Graphics g){
+		drawStars(g);
+		resetScoreSquare(g);
+		resetColorSqure(g);
+		fontSize  = 50;
+		Font font = new Font(fontName, bold, fontSize);
+		g.setFont(font);	
+		g.setColor(fontColor);
+		
+		g.drawString("GAME OVER", SCREEN_CENTER - 140, 250);
+
+		fontSize   = 25;
+		Font font2 = new Font(fontName, bold, fontSize);	
+		g.setFont(font2);
+		g.drawString("NEW GAME?", SCREEN_CENTER - 60, 300);
+		g.drawString("Y/N", SCREEN_CENTER - 10, 350);
+
+		// Reset score to 0.
+		ballImpacts = 0;
 	}
 
 	/**
-	 * Draws rules screen / image.
 	 * 
 	 * @param Graphics g
 	 */
-	public void getRules(Graphics g){
-		g.drawImage(ARC_RULES, 0, 0, Color.WHITE, this);
+	public void drawIntro(Graphics g){
+		g.drawImage(ARC_LOGO, imageOriginValue, imageOriginValue, imageBackgroundColor, this);
+	}
+
+	/**
+	 * 
+	 * @param Graphics g
+	 */
+	public void drawRules(Graphics g){
+		g.drawImage(ARC_RULES, imageOriginValue, imageOriginValue, imageBackgroundColor, this);
 	}
 
 	/**
@@ -540,25 +547,20 @@ public class ARC_APPLET extends Applet implements KeyListener, Runnable {
 	 * @param Graphics g
 	 */
 	public void drawLives(Graphics g){
+		g.setColor(Color.RED);
 		switch(impacts){
 		case 0:
-			g.setColor(Color.RED);
 			g.fillArc(APPLET_WIDTH - 130, 140, 40, 25, 135, 270);
 			g.fillArc(APPLET_WIDTH - 85, 140, 40, 25, 135, 270);
 			g.fillArc(APPLET_WIDTH - 40, 140, 40, 25, 135, 270);   		
 			break;
-
 		case 1:
-			g.setColor(Color.RED);
 			g.fillArc(APPLET_WIDTH - 130, 140, 40, 25, 135, 270);
 			g.fillArc(APPLET_WIDTH - 85, 140, 40, 25, 135, 270);		
 			break;
-
 		case 2:
-			g.setColor(Color.RED);
 			g.fillArc(APPLET_WIDTH - 130, 140, 40, 25, 135, 270);		
 			break;
-
 		case 3:
 			try{
 				if(gameover != null) {
@@ -567,7 +569,7 @@ public class ARC_APPLET extends Applet implements KeyListener, Runnable {
 			} catch(NullPointerException e){
 				e.printStackTrace();
 			}				    		
-			STATE = 2;			    		
+			gameState = GAME_OVER_SCREEN;			    		
 			break;
 		}
 	}
@@ -588,16 +590,16 @@ public class ARC_APPLET extends Applet implements KeyListener, Runnable {
 	}
 
 	/**
-	 * Draw player score.
 	 * 
 	 * @param Graphics g
 	 */
 	public void drawScore(Graphics g){	
 		g.setColor(Color.GRAY);
 		g.fillRect(APPLET_WIDTH - 130,  10,  200,  120);
-		Font font = new Font("Bauhaus 93", Font.BOLD, 90);
-		g.setFont(font);
-		g.setColor(Color.WHITE);	
+		fontSize  = 90;
+		Font font = new Font(fontName, bold, fontSize);
+		g.setFont(font);	
+		g.setColor(fontColor);
 		g.drawString(" " + ballImpacts, APPLET_WIDTH-150, 100);
 	}
 
@@ -617,19 +619,18 @@ public class ARC_APPLET extends Applet implements KeyListener, Runnable {
 	 * 
 	 * @param Graphics g
 	 */
-	public void checkBlackHoleCollision(Graphics g){
+	public void checkBlackHoleCollisionWithPlayer(Graphics g){
 		for(int i = 0; i < blackHoleArray.length; i++) {
 			if(
 					((arc.getX()+arc.getWidth()>=blackHoleArray[0].getX()+50) && 
-							((arc.getX()<=blackHoleArray[0].getX()+blackHoleArray[0].getWidth()-50))) && 
+					((arc.getX()<=blackHoleArray[0].getX()+blackHoleArray[0].getWidth()-50))) && 
 					(arc.getY()<blackHoleArray[0].getY()+blackHoleArray[0].getHeight())
 					){
-
-				if(arc.getX() > APPLET_WIDTH / 2) {
+				if(arc.getX() > SCREEN_CENTER) {
 					arc.setX(0);
 				}
-				else if(arc.getX() < APPLET_WIDTH / 2) {
-					arc.setX(APPLET_WIDTH-arc.getWidth());
+				else if(arc.getX() < SCREEN_CENTER) {
+					arc.setX((int) (APPLET_WIDTH - arc.getWidth()));
 				}
 				try{
 					if(blackHoleCollide != null) {
@@ -640,21 +641,28 @@ public class ARC_APPLET extends Applet implements KeyListener, Runnable {
 				}
 				impact = true;
 				g.setColor(Color.BLACK);
-				g.fillArc(arc.getX(), arc.getY(), arc.getWidth(), arc.getHeight(), arc.getStartAngle(), arc.getArcAngle());
+				g.fillArc(
+						(int) arc.getX(), 
+						(int) arc.getY(), 
+						(int) arc.getWidth(), 
+						(int) arc.getHeight(), 
+						arc.getStartAngle(), 
+						arc.getArcAngle()
+						);
 			}
 		}
 	}
 
 	/**
-	 * Draws black holes.
 	 * 
 	 * @param Graphics g
 	 */
 	public void drawBlackHoles(Graphics g){
+		int size = 100;
 		if(blackHoleArray[0].getY() >= APPLET_HEIGHT) {
 			for(int i = 0; i < blackHoleArray.length; i++) {
-				Random randx = new Random();
-				blackHoleArray[i] = new BlackHole(randx.nextInt(APPLET_WIDTH), 0, 100, 100, Color.DARK_GRAY);
+				Random xPosition = new Random();
+				blackHoleArray[i] = new BlackHole(xPosition.nextInt(APPLET_WIDTH), 0, size, size, Color.DARK_GRAY);
 				for(int a = 0; a < blackHoleArray.length; a++) {	
 					blackHoleArray[a].draw(g);												
 				}						
@@ -663,17 +671,17 @@ public class ARC_APPLET extends Applet implements KeyListener, Runnable {
 	}
 
 	/**
-	 * Draws fireball image when player collects correct ball.
+	 * Draws fireball image when player collects correct "planet" ball.
 	 * 
 	 * @param Graphics g
 	 */
 	public void drawFireBalls(Graphics g) {		
-		if(fire != 0) {
-			fireBallArray[fire].setX(arc.getX() + arc.getWidth() / 2);
+		if (fire != 0) {
+			fireBallArray[fire].setX((int) (arc.getX() + arc.getWidth() / 2));
 			g.drawImage(
 					explosion, 
-					fireBallArray[fire].getX() + fireBallArray[fire].getWidth() / 2, 
-					fireBallArray[fire].getY(), 
+					(int) (fireBallArray[fire].getX() + fireBallArray[fire].getWidth() / 2), 
+					(int) fireBallArray[fire].getY(), 
 					1, 
 					1, 
 					0, 
@@ -701,12 +709,16 @@ public class ARC_APPLET extends Applet implements KeyListener, Runnable {
 	 * 
 	 * @param Graphics g
 	 */
-	public void checkBallArcCollision(Graphics g){			 
+	public void checkBallArcCollision(Graphics g){
+		double ballXPosition = ballArray[0].getX();
+		double ballYPosition = ballArray[0].getY();
+		double arcXPosition  = arc.getX();
+		double arcYPosition  = arc.getY();
 		if(
-				((ballArray[0].getY() > arc.getY()) && 
-						ballArray[0].getY() < arc.getY() + 7) && 
-				((ballArray[0].getX() > arc.getX() && 
-						ballArray[0].getX() < arc.getX()+arc.getWidth()))
+				((ballYPosition > arcYPosition) && 
+				ballYPosition < arcYPosition + 7) && 
+				((ballXPosition > arcXPosition && 
+				ballXPosition < arcXPosition + arc.getWidth()))
 				){
 			fire++;
 			drawScoreCircles(g);
@@ -723,21 +735,25 @@ public class ARC_APPLET extends Applet implements KeyListener, Runnable {
 	}
 
 	/**
-	 * Generates all balls after the first initial balls.
+	 * Generates all "planet" balls after the first initial "planet" balls.
 	 * 
 	 * @param Graphics g
 	 */
 	public void generateAllSubsequentBalls(Graphics g){
 		if(ballArray[5].getY() >= APPLET_HEIGHT) {			
-			for(int i=0; i<ballArray.length; i++){
-				Random rand  = new Random();
-				Random rand2 = new Random();
-				int x        = rand2.nextInt(6);
-				getBallColor(x);
-				ballArray[i] = new Ball(rand.nextInt(APPLET_WIDTH - 50), 0, 50, 50, colorOfBall);	
-				flashColor = ballArray[0].getBallColor();								
+			for(int i = 0; i < ballArray.length; i++){
+				Random rand2        = new Random();
+				int randomBallColor = rand2.nextInt(6);
+				getBallColor(randomBallColor);
+				
+				Random ballXPosition  = new Random();
+				int size     = 50;
+				ballArray[i] = new Ball(ballXPosition.nextInt(APPLET_WIDTH - 50), 0, size, size, colorOfBall);	
+				flashColor   = ballArray[0].getBallColor();								
 				g.setColor(flashColor);
-				g.fillRect(20,  20,  100,  100);
+				int flashColorPosition = 20;
+				int flashColorSize     = 100;
+				g.fillRect(flashColorPosition,  flashColorPosition,  flashColorSize,  flashColorSize);
 				for(int a = 0; a < ballArray.length; a++){			
 					ballArray[a].draw(g);						
 				}								
@@ -746,19 +762,20 @@ public class ARC_APPLET extends Applet implements KeyListener, Runnable {
 	}
 
 	/**
-	 * Not sure what this method actually does and I'm too lazy to trace it.
 	 * 
 	 * @param Graphics g
 	 */
 	public void drawScoreCircles(Graphics g) {
+		int xPosition = (int) ballArray[0].getX();
+		int yPosition = (int) ballArray[0].getY();
 		g.setColor(Color.YELLOW);
-		g.fillOval(ballArray[0].getX(), ballArray[0].getY() - 300, 200, 200);
+		g.fillOval(xPosition, yPosition - 300, 200, 200);
 		g.setColor(Color.BLUE);
-		g.fillOval(ballArray[0].getX(), ballArray[0].getY() - 400, 150, 150);
+		g.fillOval(xPosition, yPosition - 400, 150, 150);
 		g.setColor(Color.RED);
-		g.fillOval(ballArray[0].getX() + 200, ballArray[0].getY() - 100, 200, 200);
+		g.fillOval(xPosition + 200, yPosition - 100, 200, 200);
 		g.setColor(Color.GREEN);
-		g.fillOval(ballArray[0].getX() - 400, ballArray[0].getY() - 400, 300, 300);
+		g.fillOval(xPosition - 400, yPosition - 400, 300, 300);
 	}
 
 	/**
@@ -767,15 +784,15 @@ public class ARC_APPLET extends Applet implements KeyListener, Runnable {
 	 * @param Graphics g
 	 */
 	public void update(Graphics g) {
+		Color doubleBufferingColor = Color.BLACK;
 		if(i == null) {
 			i = createImage(this.getSize().width, this.getSize().height);
 			doubleG = i.getGraphics();
 		}
-		doubleG.setColor(Color.black);
-		doubleG.fillRect(0,  0, this.getSize().width, this.getSize().height);
-		doubleG.setColor(Color.black);
+		doubleG.setColor(doubleBufferingColor);
+		doubleG.fillRect(imageOriginValue,  imageOriginValue, this.getSize().width, this.getSize().height);
 		paint(doubleG);
-		g.drawImage(i, 0, 0, this);			
+		g.drawImage(i, imageOriginValue, imageOriginValue, this);			
 	}
 
 	@Override
@@ -793,27 +810,21 @@ public class ARC_APPLET extends Applet implements KeyListener, Runnable {
 		case KeyEvent.VK_LEFT:
 			arc.moveLeft();	    		
 			break;
-
 		case KeyEvent.VK_RIGHT:
 			arc.moveRight();
 			break;
-
 		case KeyEvent.VK_ENTER:
-			STATE=0;
+			gameState = 0;
 			break;
-
 		case KeyEvent.VK_Y:
 			newGame();
 			break;
-
 		case KeyEvent.VK_N:
-			reset();
+			resetGame();
 			break;
-
 		case KeyEvent.VK_SPACE:
-			STATE=1;
+			gameState = 1;
 			break;
-
 		case KeyEvent.VK_ESCAPE:
 			System.exit(0);
 			break;
