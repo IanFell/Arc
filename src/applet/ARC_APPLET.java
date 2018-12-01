@@ -35,27 +35,17 @@ public class ARC_APPLET extends Applet implements KeyListener, Runnable {
 	
 	public final static int SCREEN_LEFT_BOUNDARY  = 0;
 	public final static int SCREEN_RIGHT_BOUNDARY = APPLET_WIDTH - 100;
+	private final static int SCREEN_CENTER        = APPLET_WIDTH / 2;
 	
-	private final static int SCREEN_CENTER = APPLET_WIDTH / 2;
-
-	// Color of ball "planets".
-	private Color colorOfBall;
-
-	// Color of flashing square.
-	private Color flashColor; 
-
-	// Keeps track of fireBallArray
-	private int fire = 0;
-
-	// Keeps track of impacts with black holes, used to update life icons.
-	private int impacts        = 0;
-	private int ballImpacts    = 0;
-	private boolean impact     = false;
-	private boolean ballImpact = false;
+	public static final int DIFFICULTY_EASY   = 0;
+	public static final int DIFFICULTY_MEDIUM = 1;
+	public static final int DIFFICULTY_HARD   = 2;
+	public int difficulty                     = DIFFICULTY_EASY;
 	
-	public boolean easy;
-	public boolean medium;
-	public boolean hard;
+	// These numbers represent the number of balls player has to catch to advance to next level.
+	private final int DIFFICULTY_LEVEL_ONE   = 5;
+	private final int DIFFICULTY_LEVEL_TWO   = 10;
+	private final int DIFFICULTY_LEVEL_THREE = 15;
 	
 	private int gameState;
 	private final int INTRO_SCREEN     = -1;
@@ -63,10 +53,22 @@ public class ARC_APPLET extends Applet implements KeyListener, Runnable {
 	private final int GAME_PLAY_SCREEN = 1;
 	private final int GAME_OVER_SCREEN = 2;
 	private final int WINNING_SCREEN   = 3;
-	
-	private final int DIFFICULTY_LEVEL_ONE   = 5;
-	private final int DIFFICULTY_LEVEL_TWO   = 10;
-	private final int DIFFICULTY_LEVEL_THREE = 15;
+
+	// Color of ball "planets".
+	private Color colorOfBall;
+
+	// Color of flashing square.
+	private Color flashColor; 
+
+	// Keeps track of fireBallArray count.
+	private int fireBallCount = 0;
+
+	// Keeps track of impacts with black holes, used to update life icons.
+	private int originalBallImpactValue = 0;
+	private int impacts                 = originalBallImpactValue;
+	private int ballImpacts             = originalBallImpactValue;
+	private boolean impact              = false;
+	private boolean ballImpact          = false;
 	
 	// This is for double buffering.
 	private Image i;       
@@ -110,6 +112,9 @@ public class ARC_APPLET extends Applet implements KeyListener, Runnable {
 	private Image ARC_LOGO;
 	private Image ARC_RULES;
 	private Image explosion;
+	
+	private String newGameString = "NEW GAME?";
+	private String yesNoString   = "Y/N";
 
 	private void loadAudio(){
 		URL musicsong = this.getClass().getResource("/Music/menu.au");
@@ -151,11 +156,11 @@ public class ARC_APPLET extends Applet implements KeyListener, Runnable {
 		loadImages();
 		setSize(APPLET_WIDTH, APPLET_HEIGHT);
 		setBackground(Color.BLACK);
-		ufo   = new UFO(200, 200, 100, 25, Color.LIGHT_GRAY);
-		easy  = true;
+		int ufoPosition = 200;
+		ufo             = new UFO(ufoPosition, ufoPosition, 100, 25, Color.LIGHT_GRAY);
+		difficulty      = DIFFICULTY_EASY;
+		gameState       = INTRO_SCREEN;
 		music.loop();
-
-		gameState = INTRO_SCREEN;
 
 		// Creates new "planet" balls, with random x position and color.
 		for(int i = 0; i < ballArray.length; i++){
@@ -243,8 +248,8 @@ public class ARC_APPLET extends Applet implements KeyListener, Runnable {
 			for(int i = 0; i < lazerArray.length; i++){
 				lazerArray[i].update(this);
 			}
-			if(fire != 0) {
-				fireBallArray[fire].update(this);
+			if(fireBallCount != 0) {
+				fireBallArray[fireBallCount].update(this);
 			}
 			ufo.update(this);
 			repaint(); 
@@ -283,15 +288,10 @@ public class ARC_APPLET extends Applet implements KeyListener, Runnable {
 		}
 	}
 
-	/**
-	 * Reset to original state for new game.
-	 */
 	public void resetGame(){
-		easy        = true;
-		medium      = false;
-		hard        = false;
-		impacts     = 0;
-		ballImpacts = 0;
+		difficulty  = DIFFICULTY_EASY;
+		impacts     = originalBallImpactValue;
+		ballImpacts = originalBallImpactValue;
 		gameState   = INTRO_SCREEN;
 	}
 
@@ -299,11 +299,9 @@ public class ARC_APPLET extends Applet implements KeyListener, Runnable {
 	 * Start new game.
 	 */
 	public void newGame(){
-		easy        = true;
-		medium      = false;
-		hard        = false;
-		impacts     = 0;
-		ballImpacts = 0;
+		difficulty  = DIFFICULTY_EASY;
+		impacts     = originalBallImpactValue;
+		ballImpacts = originalBallImpactValue;
 		gameState   = GAME_PLAY_SCREEN;
 	}
 
@@ -314,30 +312,30 @@ public class ARC_APPLET extends Applet implements KeyListener, Runnable {
 	public void performGameLogic(Graphics g){
 		arc.draw(g);
 		drawFirstBalls(g);			
-		generateAllSubsequentBalls(g); 
-		checkBallArcCollision(g);
+		drawAllSubsequentBalls(g); 
 		drawFireBalls(g);
-		if (ballImpact) {
-			ballImpacts++;
-		}
 		blackHoleArray[0].draw(g);				
 		drawBlackHoles(g);					
-		checkBlackHoleCollisionWithPlayer(g);
-		if(impact) {
-			impacts++;
-		}
 		drawLives(g);
 		ufo.draw(g);
 		lazerArray[0].draw(g);
 		drawLazers(g);
-		checkLazerCollision(g);
 		drawScore(g);
-
 		// Square flashes to show player which color ball to catch.
 		drawFlashSquare(g);
 
 		impact     = false;
 		ballImpact = false;
+		
+		checkBallArcCollision(g);
+		if (ballImpact) {
+			ballImpacts++;
+		}
+		checkBlackHoleCollisionWithPlayer(g);
+		if(impact) {
+			impacts++;
+		}
+		checkLazerCollision(g);
 
 		// Sets how fast balls are falling, and if player has won.
 		setGameState();
@@ -348,14 +346,10 @@ public class ARC_APPLET extends Applet implements KeyListener, Runnable {
 	 */
 	public void setGameState() {
 		if (ballImpacts == DIFFICULTY_LEVEL_ONE){
-			easy   = false;
-			medium = true;
-			hard   = false;			
+			difficulty  = DIFFICULTY_MEDIUM;
 		}
 		if (ballImpacts == DIFFICULTY_LEVEL_TWO) {
-			easy   = false;
-			medium = false;
-			hard   = true;
+			difficulty  = DIFFICULTY_HARD;
 		}
 		if (ballImpacts == DIFFICULTY_LEVEL_THREE) {
 			try{
@@ -408,7 +402,7 @@ public class ARC_APPLET extends Applet implements KeyListener, Runnable {
 			if(
 					(lazerArray[i].getY()+lazerArray[0].getHeight() > arc.getY()) &&
 					((lazerArray[i].getX() >= arc.getX()) && 
-					(lazerArray[0].getX() <= (arc.getX()+arc.getWidth())))
+					(lazerArray[0].getX() <= (arc.getX() + arc.getWidth())))
 					){		
 				// Reset player score.
 				ballImpacts = 0; 
@@ -493,8 +487,8 @@ public class ARC_APPLET extends Applet implements KeyListener, Runnable {
 		fontSize = 25;
 		font     = new Font(fontName, bold, fontSize);
 		g.setFont(font);	
-		g.drawString("NEW GAME?", SCREEN_CENTER - 60, 450);
-		g.drawString("Y/N", SCREEN_CENTER - 10, 500);
+		g.drawString(newGameString, SCREEN_CENTER - 60, 450);
+		g.drawString(yesNoString, SCREEN_CENTER - 10, 500);
 
 		// Reset score to 0.
 		ballImpacts = 0;
@@ -518,8 +512,8 @@ public class ARC_APPLET extends Applet implements KeyListener, Runnable {
 		fontSize   = 25;
 		Font font2 = new Font(fontName, bold, fontSize);	
 		g.setFont(font2);
-		g.drawString("NEW GAME?", SCREEN_CENTER - 60, 300);
-		g.drawString("Y/N", SCREEN_CENTER - 10, 350);
+		g.drawString(newGameString, SCREEN_CENTER - 60, 300);
+		g.drawString(yesNoString, SCREEN_CENTER - 10, 350);
 
 		// Reset score to 0.
 		ballImpacts = 0;
@@ -600,7 +594,7 @@ public class ARC_APPLET extends Applet implements KeyListener, Runnable {
 		Font font = new Font(fontName, bold, fontSize);
 		g.setFont(font);	
 		g.setColor(fontColor);
-		g.drawString(" " + ballImpacts, APPLET_WIDTH-150, 100);
+		g.drawString(" " + ballImpacts, APPLET_WIDTH - 150, 100);
 	}
 
 	/**
@@ -609,7 +603,7 @@ public class ARC_APPLET extends Applet implements KeyListener, Runnable {
 	 * @param Graphics g
 	 */
 	public void drawFirstBalls(Graphics g){	
-		for(int i=0; i<ballArray.length; i++){		
+		for(int i = 0; i < ballArray.length; i++){		
 			ballArray[i].draw(g);			
 		}
 	}
@@ -661,7 +655,7 @@ public class ARC_APPLET extends Applet implements KeyListener, Runnable {
 		int size = 100;
 		if(blackHoleArray[0].getY() >= APPLET_HEIGHT) {
 			for(int i = 0; i < blackHoleArray.length; i++) {
-				Random xPosition = new Random();
+				Random xPosition  = new Random();
 				blackHoleArray[i] = new BlackHole(xPosition.nextInt(APPLET_WIDTH), 0, size, size, Color.DARK_GRAY);
 				for(int a = 0; a < blackHoleArray.length; a++) {	
 					blackHoleArray[a].draw(g);												
@@ -676,12 +670,12 @@ public class ARC_APPLET extends Applet implements KeyListener, Runnable {
 	 * @param Graphics g
 	 */
 	public void drawFireBalls(Graphics g) {		
-		if (fire != 0) {
-			fireBallArray[fire].setX((int) (arc.getX() + arc.getWidth() / 2));
+		if (fireBallCount != 0) {
+			fireBallArray[fireBallCount].setX((int) (arc.getX() + arc.getWidth() / 2));
 			g.drawImage(
 					explosion, 
-					(int) (fireBallArray[fire].getX() + fireBallArray[fire].getWidth() / 2), 
-					(int) fireBallArray[fire].getY(), 
+					(int) (fireBallArray[fireBallCount].getX() + fireBallArray[fireBallCount].getWidth() / 2), 
+					(int) fireBallArray[fireBallCount].getY(), 
 					1, 
 					1, 
 					0, 
@@ -720,7 +714,7 @@ public class ARC_APPLET extends Applet implements KeyListener, Runnable {
 				((ballXPosition > arcXPosition && 
 				ballXPosition < arcXPosition + arc.getWidth()))
 				){
-			fire++;
+			fireBallCount++;
 			drawScoreCircles(g);
 			ballImpact = true;	
 			try{
@@ -739,7 +733,7 @@ public class ARC_APPLET extends Applet implements KeyListener, Runnable {
 	 * 
 	 * @param Graphics g
 	 */
-	public void generateAllSubsequentBalls(Graphics g){
+	public void drawAllSubsequentBalls(Graphics g){
 		if(ballArray[5].getY() >= APPLET_HEIGHT) {			
 			for(int i = 0; i < ballArray.length; i++){
 				Random rand2        = new Random();
@@ -829,5 +823,13 @@ public class ARC_APPLET extends Applet implements KeyListener, Runnable {
 			System.exit(0);
 			break;
 		}
+	}
+
+	/**
+	 * 
+	 * @return int
+	 */
+	public int getDifficulty() {
+		return difficulty;
 	}
 }

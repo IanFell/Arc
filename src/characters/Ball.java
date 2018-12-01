@@ -43,13 +43,13 @@ public class Ball extends GameObject {
 	 */
 	@Override
 	public void update(ARC_APPLET arc_APPLET) {
-		if(arc_APPLET.easy == true){
+		if(arc_APPLET.getDifficulty() == ARC_APPLET.DIFFICULTY_EASY){
 			y += 4;
 		}
-		if(arc_APPLET.medium == true){
+		if(arc_APPLET.getDifficulty() == ARC_APPLET.DIFFICULTY_MEDIUM){
 			y += 5;
 		}
-		if(arc_APPLET.hard == true){
+		if(arc_APPLET.getDifficulty() == ARC_APPLET.DIFFICULTY_HARD){
 			y += 6;
 		}
 	}
