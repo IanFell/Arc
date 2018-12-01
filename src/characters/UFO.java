@@ -25,7 +25,6 @@ public class UFO extends GameObject {
 	public UFO(double x, double y, double width, double height, Color color){
 		super(x, y, width, height);
 		this.color = color;
-		dx         = 1;
 		speed      = 1;
 	}
 		
@@ -72,12 +71,13 @@ public class UFO extends GameObject {
 	 */
 	@Override
 	public void update(ARC_APPLET arc_APPLET) {
-		if(x < 100)
+		int boundaryOffset = 100;
+		if(x < ARC_APPLET.SCREEN_LEFT_BOUNDARY + boundaryOffset)
 			dx = speed;
-		if(x >= ARC_APPLET.APPLET_WIDTH - 200)
+		if(x >= ARC_APPLET.SCREEN_RIGHT_BOUNDARY - boundaryOffset)
 			dx = -speed;
 		if(y < 100)
-			dy = 1;
+			dy = speed;
 		if(y >= ARC_APPLET.APPLET_HEIGHT - 300)
 			dy = -speed;
 		x += dx;

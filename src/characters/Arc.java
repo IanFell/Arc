@@ -73,10 +73,10 @@ public class Arc extends GameObject {
 	 */
 	@Override
 	public void update(ARC_APPLET arc_APPLET) {
-		if (x + dx >= ARC_APPLET.APPLET_WIDTH - 100) {			
+		if (x + dx >= ARC_APPLET.SCREEN_RIGHT_BOUNDARY) {			
 			dx = stopMovingValue;
 		}	
-		else if (x + dx <= 0) {				
+		else if (x + dx <= ARC_APPLET.SCREEN_LEFT_BOUNDARY) {				
 			dx = stopMovingValue;								
 		}
 		else {

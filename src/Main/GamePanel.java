@@ -10,13 +10,11 @@ import javax.swing.JPanel;
  * @author Fabulous Fellini
  *
  */
-public class leftPanel extends JPanel{
-
+public class GamePanel extends JPanel {
 	/**
 	 * Keep compiler happy.
 	 */
 	private static final long serialVersionUID = 1L;
-	
 	/**
 	 * 
 	 * @param Graphics g

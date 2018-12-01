@@ -33,10 +33,10 @@ public class ARC_APPLET extends Applet implements KeyListener, Runnable {
 	public final static int APPLET_WIDTH  = 600;
 	public final static int APPLET_HEIGHT = 700;
 	
+	public final static int SCREEN_LEFT_BOUNDARY  = 0;
+	public final static int SCREEN_RIGHT_BOUNDARY = APPLET_WIDTH - 100;
+	
 	private final static int SCREEN_CENTER = APPLET_WIDTH / 2;
-
-	//private int playerScore = 0;
-	//private int level       = 0;
 
 	// Color of ball "planets".
 	private Color colorOfBall;

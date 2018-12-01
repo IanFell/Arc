@@ -17,7 +17,7 @@ import applet.ARC_APPLET;
  */
 public class Main { 
 	
-	private static ARC_APPLET myGame;
+	private static ARC_APPLET arcApplet;
 	
 	/**
 	 * 
@@ -26,12 +26,12 @@ public class Main {
 	public static void main(String s[]) {
 		JFrame f = new JFrame("ARC");
 		f.setLayout(new BorderLayout());
-		myGame   = new ARC_APPLET();
-		myGame.init();
+		arcApplet = new ARC_APPLET();
+		arcApplet.init();
 		f.setPreferredSize(new Dimension(650, 750));
 		f.setResizable(false);
-		f.add(myGame, BorderLayout.CENTER);
-  	  	myGame.start();
+		f.add(arcApplet, BorderLayout.CENTER);
+		arcApplet.start();
 		f.pack();
 		f.setVisible(true);
 		f.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
